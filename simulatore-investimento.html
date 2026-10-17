@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulatore di crescita — Interesse composto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F3EC;
+    --paper-2:#EFEAE0;
+    --ink:#16302B;
+    --ink-soft:#3E5751;
+    --forest:#1B4B43;
+    --gold:#B8892B;
+    --gold-soft:#DDC38A;
+    --line:#C9C2AF;
+    --tax:#9A4B3C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper-2);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 80px;
+  }
+  .receipt{
+    width:100%;
+    max-width:520px;
+    background:var(--paper);
+    position:relative;
+    box-shadow:0 1px 2px rgba(22,48,43,0.08), 0 20px 40px -20px rgba(22,48,43,0.25);
+    padding:0 0 8px;
+  }
+  .perf{
+    height:14px;
+    width:100%;
+    background:
+      radial-gradient(circle at 10px 7px, var(--paper-2) 5px, transparent 5.5px) repeat-x;
+    background-size:20px 14px;
+  }
+  .perf.top{transform:translateY(-1px);}
+  .perf.bottom{transform:translateY(1px) rotate(180deg);}
+
+  header{
+    padding:28px 28px 18px;
+    text-align:center;
+    border-bottom:1px dashed var(--line);
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:26px;
+    margin:6px 0 2px;
+    letter-spacing:-.01em;
+  }
+  .sub{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  .panel{
+    padding:22px 28px;
+    border-bottom:1px dashed var(--line);
+  }
+  .row-label{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:8px;
+  }
+  .row-label label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.04em;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+  .row-label .val{
+    font-family:'Fraunces',serif;
+    font-size:17px;
+    font-weight:500;
+    color:var(--forest);
+  }
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%;
+    height:2px;
+    background:var(--line);
+    outline:none;
+    margin:14px 0 4px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:14px;height:14px;
+    border-radius:50%;
+    background:var(--forest);
+    border:3px solid var(--paper);
+    box-shadow:0 0 0 1px var(--forest);
+    cursor:pointer;
+    margin-top:-6px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;
+    border-radius:50%;
+    background:var(--forest);
+    border:3px solid var(--paper);
+    box-shadow:0 0 0 1px var(--forest);
+    cursor:pointer;
+  }
+  .tick-row{
+    display:flex;
+    justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:#8a8a7a;
+  }
+  .toggle-row{
+    display:flex;
+    gap:8px;
+    margin-top:4px;
+  }
+  .toggle-row button{
+    flex:1;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.05em;
+    padding:8px 6px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .toggle-row button.active{
+    background:var(--forest);
+    border-color:var(--forest);
+    color:var(--paper);
+  }
+
+  .hero{
+    padding:26px 28px 8px;
+    text-align:center;
+  }
+  .hero .eyebrow{margin-bottom:6px;}
+  .hero-num{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:44px;
+    letter-spacing:-.02em;
+    color:var(--forest);
+    line-height:1;
+  }
+  .hero-sub{
+    margin-top:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex;
+    justify-content:center;
+    gap:18px;
+  }
+  .hero-sub span b{color:var(--ink);}
+
+  svg#chart{width:100%;height:150px;display:block;margin-top:14px;}
+  .chart-wrap{padding:0 28px 10px;}
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+  }
+  table th{
+    text-align:right;
+    font-weight:500;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    font-size:10px;
+    letter-spacing:.04em;
+    padding:6px 0;
+    border-bottom:1px solid var(--line);
+  }
+  table th:first-child, table td:first-child{text-align:left;}
+  table td{
+    text-align:right;
+    padding:7px 0;
+    border-bottom:1px dotted var(--line);
+  }
+  .tbl-wrap{padding:4px 28px 20px;}
+  .gain{color:var(--forest);}
+  .taxrow{color:var(--tax);}
+
+  footer{
+    padding:16px 28px 4px;
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:#9a9382;
+    line-height:1.6;
+  }
+  .stamp{
+    position:absolute;
+    top:70px;
+    right:22px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--gold);
+    border:1px solid var(--gold-soft);
+    padding:3px 8px;
+    letter-spacing:.08em;
+    transform:rotate(6deg);
+    opacity:0.85;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .hero-num{transition:opacity .2s ease;}
+  }
+</style>
+</head>
+<body>
+
+<div class="receipt">
+  <div class="perf top"></div>
+  <div class="stamp">SIMULATO</div>
+
+  <header>
+    <div class="eyebrow">Estratto proiezione &middot; ETF accumulo</div>
+    <h1>Crescita del capitale</h1>
+    <div class="sub">interesse composto — capitalizzazione annua</div>
+  </header>
+
+  <div class="panel">
+    <div class="row-label"><label>Versamento iniziale</label><div class="val" id="lumpVal">€ 15.000</div></div>
+    <input type="range" id="lump" min="0" max="200000" step="500" value="15000">
+    <div class="tick-row"><span>€0</span><span>€200.000</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="row-label"><label>PAC mensile</label><div class="val" id="pacVal">€ 0</div></div>
+    <input type="range" id="pac" min="0" max="2000" step="10" value="0">
+    <div class="tick-row"><span>€0</span><span>€2.000/mese</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="row-label"><label>Orizzonte temporale</label><div class="val" id="yearsVal">15 anni</div></div>
+    <input type="range" id="years" min="1" max="40" step="1" value="15">
+    <div class="tick-row"><span>1</span><span>40 anni</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="row-label"><label>Rendimento medio annuo</label><div class="val" id="rateVal">8%</div></div>
+    <input type="range" id="rate" min="1" max="15" step="0.5" value="8">
+    <div class="tick-row"><span>1%</span><span>15%</span></div>
+  </div>
+
+  <div class="hero">
+    <div class="eyebrow">Valore stimato a scadenza</div>
+    <div class="hero-num" id="finalVal">€ 0</div>
+    <div class="hero-sub">
+      <span>Versato: <b id="investedVal">€0</b></span>
+      <span>Guadagno: <b id="gainVal">€0</b></span>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <svg id="chart" viewBox="0 0 480 150" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Anno</th><th>Versato</th><th>Lordo</th><th class="taxrow">Tasse 26%</th><th>Netto</th></tr>
+      </thead>
+      <tbody id="tblBody"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    Stima non vincolante &middot; rendimenti passati non garantiscono risultati futuri<br>
+    tassazione 26% su plusvalenza, applicata come se liquidato a fine periodo
+  </footer>
+
+  <div class="perf bottom"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => '€ ' + Math.round(n).toLocaleString('it-IT');
+
+const lump = $('lump'), pac = $('pac'), years = $('years'), rate = $('rate');
+
+function computeSeries(){
+  const L = +lump.value, P = +pac.value, Y = +years.value, r = (+rate.value)/100;
+  const monthlyR = r/12;
+  let balance = L;
+  let invested = L;
+  const rows = [];
+  for(let y=1; y<=Y; y++){
+    for(let m=0; m<12; m++){
+      balance += P;
+      invested += P;
+      balance *= (1 + monthlyR);
+    }
+    const gain = balance - invested;
+    const tax = Math.max(gain,0) * 0.26;
+    const net = balance - tax;
+    rows.push({year:y, invested, gross:balance, tax, net});
+  }
+  return rows;
+}
+
+function render(){
+  $('lumpVal').textContent = fmt(+lump.value);
+  $('pacVal').textContent = fmt(+pac.value);
+  $('yearsVal').textContent = years.value + (years.value==1 ? ' anno' : ' anni');
+  $('rateVal').textContent = rate.value + '%';
+
+  const rows = computeSeries();
+  const last = rows[rows.length-1];
+
+  $('finalVal').textContent = fmt(last.gross);
+  $('investedVal').textContent = fmt(last.invested);
+  $('gainVal').textContent = fmt(last.gross - last.invested);
+
+  // table: show every year if <=15, else every ~ (Y/12) step, always include last
+  const Y = rows.length;
+  let step = Y <= 15 ? 1 : Math.ceil(Y/12);
+  let tbody = '';
+  rows.forEach(r=>{
+    if(r.year % step === 0 || r.year === Y){
+      tbody += `<tr><td>${r.year}</td><td>${fmt(r.invested)}</td><td class="gain">${fmt(r.gross)}</td><td class="taxrow">${fmt(r.tax)}</td><td><b>${fmt(r.net)}</b></td></tr>`;
+    }
+  });
+  $('tblBody').innerHTML = tbody;
+
+  drawChart(rows);
+}
+
+function drawChart(rows){
+  const svg = $('chart');
+  const w = 480, h = 150, pad = 6;
+  const maxVal = Math.max(...rows.map(r=>r.gross));
+  const investedPts = rows.map((r,i)=>{
+    const x = pad + i/(rows.length-1 || 1)*(w-2*pad);
+    const y = h-pad - (r.invested/maxVal)*(h-2*pad);
+    return [x,y];
+  });
+  const grossPts = rows.map((r,i)=>{
+    const x = pad + i/(rows.length-1 || 1)*(w-2*pad);
+    const y = h-pad - (r.gross/maxVal)*(h-2*pad);
+    return [x,y];
+  });
+  const toPath = pts => pts.map((p,i)=> (i===0?'M':'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const areaPath = toPath(grossPts) + ` L ${grossPts[grossPts.length-1][0]} ${h-pad} L ${grossPts[0][0]} ${h-pad} Z`;
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#1B4B43" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="#1B4B43" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaPath}" fill="url(#fillGrad)"/>
+    <path d="${toPath(investedPts)}" fill="none" stroke="#B8892B" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.8"/>
+    <path d="${toPath(grossPts)}" fill="none" stroke="#1B4B43" stroke-width="2"/>
+  `;
+}
+
+[lump, pac, years, rate].forEach(el => el.addEventListener('input', render));
+render();
+</script>
+</body>
+</html>
